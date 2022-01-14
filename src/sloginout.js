@@ -1,4 +1,4 @@
-// WebIDによるログイン・ログアウトの処理をサポートするモジュール
+// SolidのiodcIssuerでログイン・ログアウトの処理をするためのモジュール
 
 //import { solidClientAuthentication } from '@inrupt/solid-client-authn-browser';
 const solidClientAuthentication = require('@inrupt/solid-client-authn-browser');
@@ -50,39 +50,11 @@ function s_ui_update() {
   }
 }
 
-//loginout.htmlをポップアップウィンドウで出すための関数
-let loginout_window;
-function loginoutWindow(anchor) {
-  const W=500,H=300;
-  let url = anchor.getAttribute('href');
-  if (loginout_window==null || loginout_window.closed) {
-    url = encodeURI(decodeURI(url));
-    const wTop = window.screenTop + (window.innerHeight / 2) - (H / 2);
-    const wLeft = window.screenLeft + (window.innerWidth / 2) - (W / 2);
-    let features = 'width='+W+', height='+H;
-    features += ', top=' + wTop + ', left=' + wLeft;
-    features += ', personalbar=0, toolbar=0, scrollbars=1, resizable=!';
-    loginout_window = window.open(url, "Loginout!", features);
-  } else {
-    loginout_window.focus();
-  }
-}
-
 // ページの初期化と，セッションの監視(ログイン・ログアウトの監視)開始。
-// もし，ページの中にクラスがs_loginoutというAnchorが
-// あったら，これをボタン化してポップアップでloginout画面を
-// 出すように初期化する。hrefには正しいloginout.htmlへのパスが
-// 設定されていることが前提。それから，ポップアップウィンドウから
-// もともとのウィンドウに戻ってきた時にUIが更新されるように，
-// window.addEventListener('focus',s_ui_update);とする。
-// これちょっと無駄も多いんだけど，ポップアップウィンドウの
-// closeを検知する方法に色々問題があって上手くいかなのと，
-// そんなに重くならないみたいなんで，しょうがなく。さらに
-// windowのfocusを使ったら，セッションの監視が必要ない感じ
-// だけど，念のため残しておく。
+// もし，ページの中にidがsloginoutという<button>とか<div>があったら，
+// モーダルでログイン、ログアウトするためのUIを生成して、#sloginoutを
+// クリックすることで表示されるようにする。
 async function s_ui_init() {
-  window.addEventListener('focus',s_ui_update);
-
   // ログイン時の処理
   auth.onLogin(() => {
     if (auth.getDefaultSession().info.isLoggedIn) {
@@ -102,34 +74,111 @@ async function s_ui_init() {
   });
   s_ui_update();
 
-  const a = document.querySelector('a.s_loginout');
-  if (!!a) {
-    a.addEventListener("click",(e)=>{
-      e.preventDefault();
-      loginoutWindow(a);
-    });
-    a.style.background = '#F0E68C';
-    a.style.color = '#000000';
-    a.style.cursor = 'pointer';
-    a.style.padding = '2px 5px';
-    a.style.margin = '2px 5px';
-    a.style.borderRadius = '5px';
-    a.style.boxShadow = '4px 4px 2px #666666';
+  const sloginout = document.querySelector('#sloginout');
+  if (!!sloginout) {
+    const info = auth.getDefaultSession().info;
+    let login_status;
+    if (info.isLoggedIn)
+      login_status = "You are logged in as "+info.webId+".";
+    else
+      login_status = "You are not logged in.";
+    const modal_style = document.createElement('style');
+    modal_style.textContent = `
+#sloginout_auto_modal_div {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: .6s;
+}
+#sloginout_auto_modal_div.is-show {
+  opacity: 1;
+  visibility: visible;
+}
+#sloginout_auto_modal_div .inner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%,-50%);
+  width: 80%;
+  max-width: 600px;
+  padding: 50px;
+  background-color: #fff;
+  z-index: 2;
+}
+#sloginout_auto_modal_div .close-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 50px;
+  height: 50px;
+  line-height: 50px;
+  text-align: center;
+  cursor: pointer;
+  font-size: 20px;
+  color: #333;
+}
+#sloginout_auto_modal_div .black-bg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,.8);
+  z-index: 1;
+  cursor: pointer;
+}
+`;
+    document.body.appendChild(modal_style);
+    const modal_div = document.createElement('div');
+    modal_div.setAttribute('id','sloginout_auto_modal_div');
+    document.body.appendChild(modal_div);
+    //modal_div.insertAdjacentHTML('afterend',`
+    modal_div.innerHTML = `
+<div class='inner'>
+  <div class='close-btn'></div>
+  <h1>login logout</h1>
+  <!-- <p class='s_login_status'></p> -->
+  <p><button class='login_solidcommunity'>login with solidcommunity</button></p>
+  <p><button class='login_inrupt_nss'>login with inrupt nss</button></p>
+  <p>Or other oidcIssuer: <input type='text' class='oidcIssuer'/>
+    <button class='login-btn'>login</button></p>
+  <p><button class='logout-btn'>logout</button></p>
+</div>
+<div class='black-bg'></div>
+`;
+    const close_btn = document.querySelector('#sloginout_auto_modal_div .close-btn');
+    const login_display = document.querySelector('#sloginout_auto_modal_div .login-display');
+    const login1 = document.querySelector('#sloginout_auto_modal_div .login_solidcommunity');
+    const login2 = document.querySelector('#sloginout_auto_modal_div .login_inrupt_nss');
+    const oidcIssuer = document.querySelector('#sloginout_auto_modal_div .oidcIssuer');
+    const login_btn = document.querySelector('#sloginout_auto_modal_div .login-btn');
+    const logout_btn = document.querySelector('#sloginout_auto_modal_div .logout-btn');
+    const black_bg = document.querySelector('#sloginout_auto_modal_div .black-bg');
+
+    sloginout.addEventListener('click',()=>{modal_div.classList.toggle('is-show');});
+    close_btn.addEventListener('click',()=>{modal_div.classList.toggle('is-show');});
+    login1.addEventListener('click',()=>{s_login('https://solidcommunity.net')});
+    login2.addEventListener('click',()=>{s_login('https://inrupt.net')});
+    login_btn.addEventListener('click',()=>{s_login(oidcIssuer.value);});
+    logout_btn.addEventListener('click',()=>{s_logout();modal_div.classList.toggle('is-show');});
+    black_bg.addEventListener('click',()=>{modal_div.classList.toggle('is-show');});
   }
 }
 document.addEventListener("DOMContentLoaded",s_ui_init);
 
-// なぜかWebIDでログインさせたいのだけど、そういう機能が
-// 無かったのでWebIDのoriginをoidcIssuerとしてログインさせている。
-function s_login(webId) {
-  if (!webId) {
-    console.log("s_login() Error: webId is not specifiled.");
+// SolidのoidcIssuerを指定してログインさせる処理
+function s_login(oidcIssuer) {
+  if (!oidcIssuer) {
+    console.log("s_login() Error: oidcIssuer is not specifiled.");
     return;
   }
-  const url = new URL(webId).origin;
   auth.login({
-    //webId: wid,
-    oidcIssuer: url,
+    oidcIssuer,
     // 都合でクエリ文字列(特にcomeback=true)を削除
     redirectUrl: location.origin + location.pathname,
     clientName: "srdf application"

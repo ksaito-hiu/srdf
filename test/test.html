@@ -8,8 +8,8 @@
   </head>
   <body>
     <p>
-      <a class="s_loginout" href="./sloginout.html?save_pre_url">login/logout</a>
       <span class="s_login_status"></span>
+      <button id="sloginout">login logout</button>
     </p>
 
     <h1>test</h1>
@@ -24,9 +24,9 @@
     <script src="../dist/srdf.js"></script>
     <script type="module">
      //import { srdf_connect, srdf_create, srdf_remove, url_tail } from "../dist/srdf.js";
-     /*
      const { srdf_connect, srdf_create, srdf_remove, url_tail } = window.srdf;
 
+     const TTL_URL = 'https://kenji.solidcommunity.net/public/sdb/test.ttl';
      let textArea = null;
      let srdf = null;
 
@@ -39,11 +39,18 @@
      }
      window.addEventListener("load",init);
 
-     function test_exec() {
-       srdf = srdf_connect('https://kenji.solidcommunity.net/public/sdb/test.ttl');
-       textArea.textContent = "not yet!";
+     function log(str) {
+       textArea.value += str+"\n";
      }
-     */
+
+     async function test_exec() {
+       await test03();
+     }
+
+     async function test03() {
+       srdf = await srdf_connect(TTL_URL);
+       log(srdf.serialize());
+     }
     </script>
   </body>
 </html>
