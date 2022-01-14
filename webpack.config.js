@@ -10,13 +10,13 @@ module.exports = {
       type: "umd"
     },
   },
-  externals: {
+  /*externals: {
     rdflib: {
       commonjs: 'rdflib',
       commonjs2: 'rdflib',
       amd: 'rdflib',
       root: '_',
     },
-  },
+  },*/
   mode: "development",
 };

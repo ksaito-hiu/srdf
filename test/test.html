@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>srdf test</title>
+    <style>.s_logged_in, .s_logged_out {display: none;}</style>
+    <style>textarea {width:90%;height:10em;}</style>
+  </head>
+  <body>
+    <p>
+      <a class="s_loginout" href="./sloginout.html?save_pre_url">login/logout</a>
+      <span class="s_login_status"></span>
+    </p>
+
+    <h1>test</h1>
+
+    <p class="s_logged_out">Please login to read the content of this page.</p>
+    <div class="s_logged_in">
+      <p><button id="test_button">test_button</button></p>
+      <p><button id="clear_button">clear_textarea</button></p>
+      <textarea id="result"></textarea>
+    </div>
+
+    <script src="../dist/srdf.js"></script>
+    <script type="module">
+     //import { srdf_connect, srdf_create, srdf_remove, url_tail } from "../dist/srdf.js";
+     /*
+     const { srdf_connect, srdf_create, srdf_remove, url_tail } = window.srdf;
+
+     let textArea = null;
+     let srdf = null;
+
+     function init() {
+       document.querySelector("#test_button").addEventListener("click",test_exec);
+       textArea = document.querySelector("#result");
+       document.querySelector("#clear_button").addEventListener("click",() => {
+         textArea.textContent = "";
+       });
+     }
+     window.addEventListener("load",init);
+
+     function test_exec() {
+       srdf = srdf_connect('https://kenji.solidcommunity.net/public/sdb/test.ttl');
+       textArea.textContent = "not yet!";
+     }
+     */
+    </script>
+  </body>
+</html>

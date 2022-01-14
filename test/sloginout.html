@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>S login/logout page</title>
+    <style>.s_logged_in, .s_logged_out {display: none;}</style>
+    <style>#popup, #link {display: none;}</style>
+  </head>
+  <body>
+    <h1>S login/logout page</h1>
+
+    <p class="s_login_status"></p>
+    <p>If you want to login, or change your account, please enter your WebID: <input id="s_webid_input" type="text"/>. And push<button id="s_login_btn">login</button>.</p>
+    <p>Push -> <button id="s_logout_btn">logout</button> to logout.</p>
+
+    <p id="popup"><button id="close_window">Close this window</button></p>
+    <p id="link"><a id="back_link" href="">Back to the previous page</a></p>
+
+    <script src="../dist/srdf.js"></script>
+    <script type="module">
+     //import {s_login,s_logout} from "./sloginout.js";
+     const { s_login,s_logout } = window.srdf;
+
+     // もし，このページが?save_pre_urlのクエリ文字列付きで
+     // 呼出されたらlocalStorageにdocument.referrer(前のページのURL)を
+     // 保存すして戻る場所を記録する。
+     const query_str = window.location.search.substring(1);
+     const queries = query_str.split('&');
+     for (const query of queries) {
+       const pair = query.split('=');
+       if (pair[0] === 'save_pre_url') {
+         if (pair[1] !== 'false') {
+           localStorage.setItem("s_backup_url",document.referrer);
+console.log("GAHA save s_backup_url: "+document.referrer);
+           break;
+         }
+       }
+     }
+
+     let url = localStorage.getItem("s_backup_url");
+     if (!url) {
+       url = localStorage.getItem("s_top_url");
+       if (!url) {
+         url = location.href;
+         url = url.substring(0,url.lastIndexOf('/'));
+       }
+     }
+     const a = document.querySelector("#back_link");
+     const ap = document.querySelector("#link");
+     const b = document.querySelector("#close_window");
+     const bp = document.querySelector("#popup");
+     if (window.opener==null) {
+       a.setAttribute("href",url);
+       ap.style.display = 'block';
+       bp.style.display = 'none';
+     } else {
+       b.addEventListener("click",(e)=>{window.close();});
+       ap.style.display = 'none';
+       bp.style.display = 'block';
+     }
+     document.querySelector("#s_login_btn").addEventListener('click',function() {
+       const webId = document.querySelector("#s_webid_input").value;
+       s_login(webId);
+     });
+     document.querySelector("#s_logout_btn").addEventListener('click',s_logout);
+    </script>
+  </body>
+</html>

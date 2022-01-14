@@ -1,11 +1,12 @@
 // Solid上のTurtleファイルをRDFのデーターベースとして
 // 手軽に使うためのJavaScriptモジュール。
 
-import { $rdf } from 'rdflib';
-//import {$rdf} from './rdflib.min.js';
-//import {solidAuthFetcher} from './solid-auth-fetcher.bundle.js';
+//import { $rdf } from 'rdflib';
+//import { solidClientAuthentication } from '@inrupt/solid-client-authn-browser';
+const $rdf = require('rdflib');
+const solidClientAuthentication = require('@inrupt/solid-client-authn-browser');
 
-// urlで指定されたTurtleファイルやRDFaが上手こまれたWebページを
+// urlで指定されたTurtleファイルやRDFaが埋め込まれたWebページを
 // 読み来んで，そこに含まれるセマンティックウェブのデーターが
 // 保存されたインメモリのRDFデーターベースを返す。
 // Solid上のTurtueファイル
@@ -14,10 +15,11 @@ import { $rdf } from 'rdflib';
 
 async function srdf_connect(url,useUpdater) {
   try {
+    
     const srdf = {};
     srdf.baseURL = url;
     srdf.store = $rdf.graph();
-    srdf.fetcher = $rdf.fetcher(srdf.store,{fetch: solidAuthFetcher.fetch.bind(solidAuthFetcher)});
+    srdf.fetcher = $rdf.fetcher(srdf.store,{fetch: solidClientAuthentication.fetch.bind(solidClientAuthentication)});
     await srdf.fetcher.load(url);
     srdf.updater = null;
     if (useUpdater===true)
