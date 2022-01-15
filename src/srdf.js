@@ -5,6 +5,7 @@
 //import { solidClientAuthentication } from '@inrupt/solid-client-authn-browser';
 const $rdf = require('rdflib');
 const solidClientAuthentication = require('@inrupt/solid-client-authn-browser');
+import { jr_parse, printTree, traverse } from './jr_parser';
 
 // urlで指定されたTurtleファイルやRDFaが埋め込まれたWebページを
 // 読み来んで，そこに含まれるセマンティックウェブのデーターが
@@ -186,18 +187,85 @@ async function srdf_connect(url,useUpdater) {
 
     // 推論ループの最大回数
     const MAX_INFER = 100;
-    // 設定されたルールを用いて推論をする
+    // 引数を指定せずに呼出された時は、事前に登録された
+    // ルールを使って推論する。jr_parser.jsで生成された
+    // 結果をparsed引数に与えた時は、その結果を使って
+    // 推論する。
     // 返り値は推論が収束した時true，しなかった時false。
-    srdf.infer = async function() {
-      let fin;
+    srdf.infer = async function(parsed) {
+      if (parsed)
+        return await srdf.infer_using_parsed(parsed);
+      else
+        return await srdf.infer_using_registered();
+    };
+
+    // 設定されたルールを用いて推論をする
+    srdf.infer_using_registered = async function() {
       for (let i=0;i<MAX_INFER;i++) {
-        fin = true;
+        let fin = true;
         for (let r of srdf.rules)
           fin = fin && await r(srdf);
         if (fin === true)
           return true;
       }
       return false;
+    };
+
+    // 1つのルール内での推論ループの最大回数
+    const MAX_INFER2 = 100;
+    // jr_parser.jsで生成された結果を使って推論する。
+    srdf.infer_using_parsed = async function(parsed) {
+      let sparql_prefixes = '';
+      let prefixes = {};
+      for (const key of Object.keys(parsed.prefixes)) {
+        sparql_prefixes += 'PREFIX '+key+': <'+parsed.prefixes[key]+'>\n';
+        prefixes[key] = $rdf.Namespace(parsed.prefixes[key]);
+      }
+      for (let i=0;i<MAX_INFER;i++) {
+        let changed1 = false;
+        for (const rule of parsed.rules) {
+          let sparql = sparql_prefixes;
+          sparql += rule.makeSparqlForLHSs();
+          for (let i=0;i<MAX_INFER2;i++) {
+            const results1 = await srdf.sparqlSelect(sparql);
+            const results2 = [];
+            // results1の検索結果の中からlhssの中のビルトインで
+            // 否定されるものを除いてresults2を作る
+            for (let r of results1) {
+              let denied = false;
+              for (const lhs of rule.lhss) {
+                if (lhs.constructor.name === 'Builtin')
+                  denied = denied || !(lhs.exec($rdf,srdf.store,r,prefixes));
+              }
+              if (!denied)
+                results2.push(r);
+            }
+            let changed2 = false;
+            // 実行部の実行
+            for (let r of results2) {
+              for (const rhs of rule.rhss) {
+                const added = await rhs.exec($rdf,srdf.store,r,prefixes);
+                if (rhs.constructor.name === 'Triple')
+                  changed2 = changed2 || added;
+              }
+            }
+            if (changed2) {
+              changed1 = true;
+              changed2 = false;
+              continue;
+            } else {
+              break;
+            }
+          }
+        }
+        if (changed1) {
+          changed1 = false;
+          continue;
+        } else {
+          return true; //収束したという意味
+        }
+      }
+      return false; //収束しなかったという意味
     };
 
     return srdf;
@@ -286,4 +354,4 @@ function srdf_ui_logged_in() {
   });
 }
 
-export { srdf_connect, srdf_create, srdf_remove, url_tail };
+export { srdf_connect, srdf_create, srdf_remove, url_tail, jr_parse };

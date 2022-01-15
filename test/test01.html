@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>srdf test</title>
+  </head>
+  <body>
+    <h1>test</h1>
+
+    <p><button onclick="test_exec()">test_button</button></p>
+    <textarea id="result" cols="40" rows="10"></textarea>
+
+    <script src="../dist/srdf.js"></script>
+    <script>
+     async function test_exec() {
+       const url = 'https://kenji.solidcommunity.net/public/PersonalData.ttl';
+       const db = await srdf.srdf_connect(url);
+       document.querySelector('#result').textContent = db.serialize();
+     }
+    </script>
+  </body>
+</html>

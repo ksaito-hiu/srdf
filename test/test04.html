@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>srdf test</title>
+  </head>
+  <body>
+    <h1>test</h1>
+
+    <p><button onclick="test_exec()">test_button</button></p>
+    <textarea id="result" cols="40" rows="10"></textarea>
+
+    <script src="../dist/srdf.js"></script>
+    <script>
+     const jena_rules = `
+@prefix : <https://test.org/#> .
+(?x :の子供 ?y) (?y :の子供 ?z) -> (?x :祖父 ?z) .
+`;
+     async function test_exec() {
+       const url = 'https://kenji.solidcommunity.net/public/PersonalData.ttl';
+       const db = await srdf.srdf_connect(url);
+       const ta = document.querySelector('#result');
+       const rules = srdf.jr_parse(jena_rules);
+       const fin = await db.infer(rules);
+       ta.textContent += "推論収束="+fin+"\n";
+       ta.textContent += "もともと入ってなかった :祖父 情報が入ってれば成功！？\n";
+       ta.textContent += db.serializeCustom('text/turtle',null);
+     }
+    </script>
+  </body>
+</html>
