@@ -121,6 +121,24 @@ async function srdf_connect(url,useUpdater) {
       });
     };
 
+    srdf.addFrom = async function(url) {
+      const store2 = $rdf.graph();
+      const fetcher2 = $rdf.fetcher(store2,{fetch: solidClientAuthentication.fetch.bind(solidClientAuthentication)});
+      await fetcher2.load(url);
+      const ins = store2.statementsMatching(null,null,null,$rdf.sym(url));
+      return new Promise((resolve,reject)=> {
+        if (srdf.updater) {
+          srdf.updater.update([],ins,(uri,ok,message) => {
+            if (ok) resolve();
+            else reject(message);
+          });
+        } else {
+          srdf.store.addAll(ins);
+          resolve();
+        }
+      });
+    };
+
     // rdflibの方法で三つ組を検索
     srdf.search = async function(s,v,o,w) {
       return srdf.store.match(s,v,o,w);

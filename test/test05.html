@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>srdf test</title>
+  </head>
+  <body>
+    <h1>test</h1>
+    <p>addFrom(url)のテスト。</p>
+    <p><button onclick="test_exec()">test_button</button></p>
+    <textarea id="result" cols="40" rows="10"></textarea>
+
+    <script src="../dist/srdf.js"></script>
+    <script>
+     async function test_exec() {
+       const url = 'https://kenji.solidcommunity.net/public/PersonalData.ttl';
+       const db = await srdf.srdf_connect(url);
+       await db.addFrom('https://id.do-johodai.ac.jp/ns/2022/vocab.ttl');
+       const ta = document.querySelector('#result')
+       const sparql = `
+SELECT ?s ?v ?o
+WHERE {
+  ?s ?v ?o .
+}`;
+       const results = await db.sparqlSelect(sparql);
+       for (const r of results) {
+         ta.textContent += `${r['?s']} ${r['?v']} ${r['?o']}\n`;
+       }
+     }
+    </script>
+  </body>
+</html>
