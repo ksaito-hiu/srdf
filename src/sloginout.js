@@ -69,9 +69,9 @@ async function s_ui_init() {
     }
   });
 
-  await auth.handleIncomingRedirect({
-    restorePreviousSession: true
-  });
+  //await auth.handleIncomingRedirect({
+  //  restorePreviousSession: false
+  //});
   s_ui_update();
 
   const sloginout = document.querySelector('#sloginout');
