@@ -21,7 +21,18 @@
       <textarea id="result"></textarea>
     </div>
 
-    <!-- <script src="https://cdn.jsdelivr.net/npm/srdf@1.1.0/dist/srdf.js"></script> -->
+    <script>
+     // 何も設定しない、またはwindow.SRDF_RESTORE_PREVIOUS_SESSION=false;
+     // の場合は、一度ログインしても別のページに移動したりリロードするだけで
+     // ログアウトする仕様になる。シングルページアプリケーションでを作るような
+     // 場合で、リロードしてもログアウトしないようにするには
+     // window.SRDF_RESTORE_PREVIOUS_SESSION=true;とする。
+     // ただし、セッションを維持しておけるのは一度に1ページだけ。
+     // (他のwindow.SRDF_RESTORE_PREVIOUS_SESSION=true;なページに移動したければ
+     // 一旦ログアウトしてからでないと行けなくなる。)
+     window.SRDF_RESTORE_PREVIOUS_SESSION=true;
+    </script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/srdf@1.3.0/dist/srdf.js"></script> -->
     <script src="../dist/srdf.js"></script>
     <script type="module">
      //import { srdf_connect, srdf_create, srdf_remove, url_tail } from "../dist/srdf.js";

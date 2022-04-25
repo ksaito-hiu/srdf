@@ -69,9 +69,20 @@ async function s_ui_init() {
     }
   });
 
-  //await auth.handleIncomingRedirect({
-  //  restorePreviousSession: false
-  //});
+  // window.SRDF_RESTORE_PREVIOUS_SESSIONをtrueに
+  // しておくと、一度ログインしていれば、ちょっと
+  // iodcIssuerにリダイレクトしてすぐにログインした
+  // ページに戻ってくるようになる。シングルページ
+  // アプリケーションの時に便利。
+  if (window.SRDF_RESTORE_PREVIOUS_SESSION) {
+    await auth.handleIncomingRedirect({
+      restorePreviousSession: true
+    });
+  } else {
+    await auth.handleIncomingRedirect({
+      restorePreviousSession: false
+    });
+  }
   s_ui_update();
 
   const sloginout = document.querySelector('#sloginout');
