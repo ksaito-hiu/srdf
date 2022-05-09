@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>srdf test</title>
+  </head>
+  <body>
+    <h1>test</h1>
+
+    <p>以下の入力欄には「体毛」「肉食」「黄褐色」「黒い縞」とかを一つずつ入れてボタンを押す。</p>
+    <p><input id="cnd_in" type="text"/><button onclick="input_cond()">input</button></p>
+    <textarea id="result" cols="40" rows="10"></textarea>
+
+    <!-- <script src="https://cdn.jsdelivr.net/npm/srdf@1.4.0/dist/srdf.js"></script> -->
+    <script src="../dist/srdf.js"></script>
+    <script>
+     const jena_rules = `
+@prefix : <https://test.org/#> .
+(?x :性質 :体毛) -> (?x :性質 :哺乳動物) .
+(?x :性質 :授乳) -> (?x :性質 :哺乳動物) .
+(?x :性質 :飛ぶ) (?x :性質 :産卵) -> (?x :性質 :鳥) .
+(?x :性質 :羽) no(?x :名前 :ペンギン) -> (?x :性質 :飛ぶ) .
+(?x :性質 :哺乳動物) (?x :性質 :肉食) -> (?x :性質 :肉食動物) .
+(?x :性質 :哺乳動物) (?x :性質 :鋭い歯) (?x :性質 :鋭い爪) -> (?x :性質 :肉食動物) .
+(?x :性質 :哺乳動物) (?x :性質 :蹄) -> (?x :性質 :有蹄動物) .
+(?x :性質 :肉食動物) (?x :性質 :黄褐色) (?x :性質 :黒い縞) -> (?x :名前 :トラ) .
+(?x :性質 :肉食動物) (?x :性質 :黄褐色) (?x :性質 :黒い斑点) -> (?x :名前 :チータ) .
+(?x :性質 :有蹄動物) (?x :性質 :黄褐色) (?x :性質 :黒い斑点) -> (?x :名前 :キリン) .
+(?x :名前 ?name) -> strConcat('条件に一致する動物の名前は「' ?name '」です。' ?a) custom('answer' ?a) .
+`;
+
+     let db = null;
+     let rules = null;
+     async function init() {
+       db = await srdf.srdf_connect(null);
+       rules = srdf.jr_parse(jena_rules);
+       srdf.set_custom_processor(custom_process);
+     }
+     document.addEventListener('DOMContentLoaded',init);
+
+     async function input_cond() {
+       const c = document.querySelector('#cnd_in').value;
+       const s = srdf.rdf.sym('https://test.org/#動物X');
+       const v = srdf.rdf.sym('https://test.org/#性質');
+       const o = srdf.rdf.sym('https://test.org/#'+c);
+       await db.add(s,v,o);
+       const fin = await db.infer(rules);
+       const ta = document.querySelector('#result');
+       ta.textContent += "推論収束="+fin+"\n";
+       document.querySelector('#cnd_in').value = '';
+     }
+     window.input_cond = input_cond;
+
+     document.addEventListener('DOMContentLoaded',init);
+     function custom_process(builtin,rdf,store,env,prefixes) {
+       const arg1 = builtin.terms[0].eval(rdf,store,env,prefixes);
+       if (arg1==='answer') {
+         const arg2 = builtin.terms[1].eval(rdf,store,env,prefixes);
+         const ta = document.querySelector('#result');
+         ta.textContent += arg2+"\n";
+         return false; // dbに影響与えてないので再度推論する必要無いという意味
+       } else if (arg1==='????') {
+         // ほんとうは、このようなelse if 節を増やすことで
+         // 多くのカスタムビルトインを用意できる。
+         return false;
+       } else {
+         ta.textContent += '不明なカスタムビルトインが使われました。'
+         return false;
+       }
+     }
+    </script>
+  </body>
+</html>

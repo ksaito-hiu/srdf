@@ -36,6 +36,16 @@
 // builtinの全てに対応するのも無理なので、やめときたい所だけど、
 // 早急にsdbに組み込みたいのでやってしまっている。どうしても
 // notEqualとstrConcatに対応させたいところ。
+//
+// 2022,05/09: とりあえず良く使うビルトインはBuiltinクラスの
+// execメソッドに実装してしまった。さらにcustom_processorという
+// 関数を登録することができるようにして、ルールの中でcustom(???)という
+// ビルトインが来た時にその関数が呼び出される仕組みを作った。
+// つまりルールのビルトインを後付けで拡張できるようにした。
+//
+// あと気がついたこと。ルールの条件部に変数を含まない3つ組が
+// あると上手くSPARQLが組めなくて動作しない。結論部が2回
+// 実行されることがあるのは何故か？
 
 import { python_heredoc, shell_heredoc, javascript_heredoc, error, symbol, getSymbol,
          punctuator, operator, reserved, set_c1_start_str, set_cb_start_str,
@@ -341,10 +351,11 @@ class Builtin {
   makeVarList(vars) {
   }
 
+  // もともと、このメソッドで作ったttl文字列をSPARQLに入れる目的で作ったんだけど、
+  // rdflibのSPARQLが前よりも後退してるみたいで、FILTERが使えない。よってここでは
+  // 無条件の空文字列を返すだけにしてexecメソッドの中で対処することにする。
   toTurtleString() {
-    if (this.builtin === 'notEqual')
-      return 'FILTER ( '+this.terms[0].toString()+' != '+this.terms[1].toString()+' )';
-    return `# FILTER of <${this.builtin}> is not supported.`;
+    return ``;
   }
 
   exec(rdf,store,env,prefixes) {
@@ -363,14 +374,130 @@ class Builtin {
       } else {
         console.log('Error(strConcat): The last term must be a variable.');
       }
+      return;
     } else if (this.builtin === 'notEqual') {
       const a = this.terms[0].eval(rdf,store,env,prefixes);
       const b = this.terms[1].eval(rdf,store,env,prefixes);
       return !(a.equals(b));
+    } else if (this.builtin === 'equal') {
+      const a = this.terms[0].eval(rdf,store,env,prefixes);
+      const b = this.terms[1].eval(rdf,store,env,prefixes);
+      return (a.equals(b));
+    } else if (this.builtin === 'lessThan') {
+      const a = this.terms[0].eval(rdf,store,env,prefixes);
+      const b = this.terms[1].eval(rdf,store,env,prefixes);
+      return (a < b);
+    } else if (this.builtin === 'greaterThan') {
+      const a = this.terms[0].eval(rdf,store,env,prefixes);
+      const b = this.terms[1].eval(rdf,store,env,prefixes);
+      return (a > b);
+    } else if (this.builtin === 'le') {
+      const a = this.terms[0].eval(rdf,store,env,prefixes);
+      const b = this.terms[1].eval(rdf,store,env,prefixes);
+      return (a <= b);
+    } else if (this.builtin === 'ge') {
+      const a = this.terms[0].eval(rdf,store,env,prefixes);
+      const b = this.terms[1].eval(rdf,store,env,prefixes);
+      return (a >= b);
+    } else if (this.builtin === 'sum') {
+      const a = this.terms[0].eval(rdf,store,env,prefixes);
+      const b = this.terms[1].eval(rdf,store,env,prefixes);
+      const c = this.terms[2];
+      if (c.type === '変数') {
+        env[c.var] = (a + b);
+      } else {
+        console.log('Error(sum): The last term must be a variable.');
+      }
+      return;
+    } else if (this.builtin === 'addOne') {
+      const a = this.terms[0].eval(rdf,store,env,prefixes);
+      const b = this.terms[1];
+      if (b.type === '変数') {
+        env[b.var] = (a + 1);
+      } else {
+        console.log('Error(addOne): The last term must be a variable.');
+      }
+      return;
+    } else if (this.builtin === 'difference') {
+      const a = this.terms[0].eval(rdf,store,env,prefixes);
+      const b = this.terms[1].eval(rdf,store,env,prefixes);
+      const c = this.terms[2];
+      if (c.type === '変数') {
+        env[c.var] = (a - b);
+      } else {
+        console.log('Error(difference): The last term must be a variable.');
+      }
+      return;
+    } else if (this.builtin === 'min') {
+      const a = this.terms[0].eval(rdf,store,env,prefixes);
+      const b = this.terms[1].eval(rdf,store,env,prefixes);
+      const c = this.terms[2];
+      if (c.type === '変数') {
+        env[c.var] = (a<=b)?a:b;
+      } else {
+        console.log('Error(min): The last term must be a variable.');
+      }
+      return;
+    } else if (this.builtin === 'max') {
+      const a = this.terms[0].eval(rdf,store,env,prefixes);
+      const b = this.terms[1].eval(rdf,store,env,prefixes);
+      const c = this.terms[2];
+      if (c.type === '変数') {
+        env[c.var] = (a>=b)?a:b;
+      } else {
+        console.log('Error(max): The last term must be a variable.');
+      }
+      return;
+    } else if (this.builtin === 'product') {
+      const a = this.terms[0].eval(rdf,store,env,prefixes);
+      const b = this.terms[1].eval(rdf,store,env,prefixes);
+      const c = this.terms[2];
+      if (c.type === '変数') {
+        env[c.var] = a * b;
+      } else {
+        console.log('Error(product): The last term must be a variable.');
+      }
+      return;
+    } else if (this.builtin === 'quotient') {
+      const a = this.terms[0].eval(rdf,store,env,prefixes);
+      const b = this.terms[1].eval(rdf,store,env,prefixes);
+      const c = this.terms[2];
+      if (c.type === '変数') {
+        env[c.var] = a / b;
+      } else {
+        console.log('Error(quotient): The last term must be a variable.');
+      }
+      return;
+    } else if (this.builtin === 'no') { /// 三つ組の否定判定
+      const a = this.terms[0].eval(rdf,store,env,prefixes);
+      const b = this.terms[1].eval(rdf,store,env,prefixes);
+      const c = this.terms[2].eval(rdf,store,env,prefixes);
+      const matches = store.match(a,b,c);
+      if (matches.length===0)
+        return true;
+      else
+        return false;
+    } else if (this.builtin === 'custom') {
+      if (custom_processor===null) {
+        console.log('Error(custom): custom_processor is not set up.');
+        return;
+      }
+      return custom_processor(this,rdf,store,env,prefixes);
     } else {
       console.log(`Error: ${this.builtin} is not executable.`);
     }
   }
+}
+
+// custom_processorを設定しておくと、ルールの中に
+// custom(???)という項目が出てきたらcustom_processorが
+// 呼ばれる仕組みを作る。デフォルトのルールのビルトインで
+// 対応できない処理を後から追加できる。使い方を詳しく説明
+// すると長くなるので、この上のビルトインのexecメソッドの中
+// などを参考に解読するべし。
+let custom_processor = null;
+function set_custom_processor(cp) {
+  custom_processor = cp;
 }
 
 // ルールのクラス
@@ -424,4 +551,4 @@ class Rule {
   }
 }
 
-export { jr_parse, printTree, traverse }
+export { jr_parse, printTree, traverse, set_custom_processor }

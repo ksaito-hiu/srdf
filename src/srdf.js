@@ -5,7 +5,7 @@
 //import { solidClientAuthentication } from '@inrupt/solid-client-authn-browser';
 const $rdf = require('rdflib');
 const solidClientAuthentication = require('@inrupt/solid-client-authn-browser');
-import { jr_parse, printTree, traverse } from './jr_parser';
+import { jr_parse, printTree, traverse, set_custom_processor } from './jr_parser';
 
 // urlで指定されたTurtleファイルやRDFaが埋め込まれたWebページを
 // 読み来んで，そこに含まれるセマンティックウェブのデーターが
@@ -13,15 +13,20 @@ import { jr_parse, printTree, traverse } from './jr_parser';
 // Solid上のTurtueファイル
 // ただしFethcerとUpdateManagerの機能により，インメモリの
 // データーベースの変更をSolidサーバーに反映させる機能も持つ。
-
+// urlが空だったらbaseURL='https://test.org/#';の空の
+// データベースを用意する。
 async function srdf_connect(url,useUpdater) {
   try {
     
     const srdf = {};
-    srdf.baseURL = url;
     srdf.store = $rdf.graph();
     srdf.fetcher = $rdf.fetcher(srdf.store,{fetch: solidClientAuthentication.fetch.bind(solidClientAuthentication)});
-    await srdf.fetcher.load(url);
+    if (url) {
+      srdf.baseURL = url;
+      await srdf.fetcher.load(url);
+    } else {
+      srdf.baseURL = 'https://test.org/#';
+    }
     srdf.updater = null;
     if (useUpdater===true)
       srdf.updater = new $rdf.UpdateManager(srdf.store);
@@ -121,6 +126,7 @@ async function srdf_connect(url,useUpdater) {
       });
     };
 
+    // データベースに追加でurlで示されたデータを追加
     srdf.addFrom = async function(url) {
       const store2 = $rdf.graph();
       const fetcher2 = $rdf.fetcher(store2,{fetch: solidClientAuthentication.fetch.bind(solidClientAuthentication)});
@@ -372,4 +378,5 @@ function srdf_ui_logged_in() {
   });
 }
 
-export { srdf_connect, srdf_create, srdf_remove, url_tail, jr_parse };
+const rdf = $rdf;
+export { srdf_connect, srdf_create, srdf_remove, url_tail, jr_parse, set_custom_processor, rdf };
