@@ -10,6 +10,7 @@ module.exports = {
       type: "umd"
     },
   },
+  resolve: { fallback: { "url": false }},
   /*externals: {
     rdflib: {
       commonjs: 'rdflib',
