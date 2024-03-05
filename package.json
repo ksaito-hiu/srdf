@@ -1,6 +1,6 @@
 {
   "name": "srdf",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Simple RDF Database for Solid.",
   "main": "index.js",
   "scripts": {
@@ -19,11 +19,11 @@
   },
   "homepage": "https://github.com/ksaito-hiu/srdf#readme",
   "devDependencies": {
-    "webpack": "^5.89.0",
+    "webpack": "^5.90.3",
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "@inrupt/solid-client-authn-browser": "^1.17.3",
-    "rdflib": "^2.2.32"
+    "@inrupt/solid-client-authn-browser": "^2.0.0",
+    "rdflib": "^2.2.34-1"
   }
 }
