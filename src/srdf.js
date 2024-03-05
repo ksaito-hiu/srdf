@@ -4,7 +4,7 @@
 //import { $rdf } from 'rdflib';
 //import { solidClientAuthentication } from '@inrupt/solid-client-authn-browser';
 const $rdf = require('rdflib');
-const solidClientAuthentication = require('@inrupt/solid-client-authn-browser');
+//const solidClientAuthentication = require('@inrupt/solid-client-authn-browser');
 import { jr_parse, printTree, traverse, set_custom_processor } from './jr_parser';
 
 // urlで指定されたTurtleファイルやRDFaが埋め込まれたWebページを
@@ -20,7 +20,9 @@ async function srdf_connect(url,useUpdater) {
     
     const srdf = {};
     srdf.store = $rdf.graph();
-    srdf.fetcher = $rdf.fetcher(srdf.store,{fetch: solidClientAuthentication.fetch.bind(solidClientAuthentication)});
+    //srdf.fetcher = $rdf.fetcher(srdf.store,{fetch: solidClientAuthentication.fetch.bind(solidClientAuthentication)});
+    srdf.fetcher = $rdf.fetcher(srdf.store,{fetch: window.solidFetch});
+
     if (url) {
       srdf.baseURL = url;
       await srdf.fetcher.load(url);
@@ -129,7 +131,8 @@ async function srdf_connect(url,useUpdater) {
     // データベースに追加でurlで示されたデータを追加
     srdf.addFrom = async function(url) {
       const store2 = $rdf.graph();
-      const fetcher2 = $rdf.fetcher(store2,{fetch: solidClientAuthentication.fetch.bind(solidClientAuthentication)});
+      //const fetcher2 = $rdf.fetcher(store2,{fetch: solidClientAuthentication.fetch.bind(solidClientAuthentication)});
+      const fetcher2 = $rdf.fetcher(store2,{fetch: window.solidFetch});
       await fetcher2.load(url);
       const ins = store2.statementsMatching(null,null,null,$rdf.sym(url));
       return new Promise((resolve,reject)=> {
