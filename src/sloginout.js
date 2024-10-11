@@ -11,7 +11,16 @@ const auth = solidClientAuthentication;
 //  の物のtextContentにloginの状態を書き込む)
 async function s_ui_logged_in() {
   for (let e of document.querySelectorAll(".s_logged_in")) {
-    e.style.display = "block";
+    if (e.classList.contains("block"))
+      e.style.display = "block";
+    else if (e.classList.contains("flex"))
+      e.style.display = "flex";
+    else if (e.classList.contains("inline"))
+      e.style.display = "inline";
+    else if (e.classList.contains("inline-block"))
+      e.style.display = "inline-block";
+    else
+      e.style.display = "block";
   }
   for (let e of document.querySelectorAll(".s_logged_out")) {
     e.style.display = "none";
@@ -33,7 +42,16 @@ function s_ui_logged_out() {
     e.style.display = "none";
   }
   for (let e of document.querySelectorAll(".s_logged_out")) {
-    e.style.display = "block";
+    if (e.classList.contains("block"))
+      e.style.display = "block";
+    else if (e.classList.contains("flex"))
+      e.style.display = "flex";
+    else if (e.classList.contains("inline"))
+      e.style.display = "inline";
+    else if (e.classList.contains("inline-block"))
+      e.style.display = "inline-block";
+    else
+      e.style.display = "block";
   }
   for (let e of document.querySelectorAll(".s_login_status")) {
     e.textContent = "not logged in";
