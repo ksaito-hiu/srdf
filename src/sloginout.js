@@ -223,4 +223,13 @@ async function s_logout() {
   await s_ui_update();
 }
 
-export { s_login, s_logout };
+async function s_getWebID() {
+  const info = await auth.getDefaultSession().info;
+  if (info.isLoggedIn) {
+    return info.webId;
+  } else {
+    return null;
+  }
+}
+
+export { s_login, s_logout, s_getWebID };

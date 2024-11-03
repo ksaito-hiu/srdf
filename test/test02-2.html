@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>srdf test</title>
+    <style>.s_logged_in, .s_logged_out {display: none;}</style>
+    <style>textarea {width:90%;height:10em;}</style>
+  </head>
+  <body>
+    <p>
+      <span class="s_login_status"></span>
+      <button id="my_login_btn" class="s_logged_out inline">login</button>
+      <button id="my_logout_btn" class="s_logged_in inline">logout</button>
+    </p>
+
+    <h1>test</h1>
+
+    <p class="s_logged_out">Please login to read the content of this page.</p>
+    <div class="s_logged_in">
+      <p><button id="test_button">test_button</button></p>
+      <p><button id="clear_button">clear_textarea</button></p>
+      <textarea id="result"></textarea>
+    </div>
+
+    <script>
+     // 何も設定しない、またはwindow.SRDF_RESTORE_PREVIOUS_SESSION=false;
+     // の場合は、一度ログインしても別のページに移動したりリロードするだけで
+     // ログアウトする仕様になる。シングルページアプリケーションでを作るような
+     // 場合で、リロードしてもログアウトしないようにするには
+     // window.SRDF_RESTORE_PREVIOUS_SESSION=true;とする。
+     // ただし、セッションを維持しておけるのは一度に1ページだけ。
+     // (他のwindow.SRDF_RESTORE_PREVIOUS_SESSION=true;なページに移動したければ
+     // 一旦ログアウトしてからでないと行けなくなる。)
+     window.SRDF_RESTORE_PREVIOUS_SESSION=false;
+    </script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/srdf@1.5.0/dist/srdf.js"></script> -->
+    <script src="../dist/srdf.js"></script>
+    <script type="module">
+     //import { srdf_connect, srdf_create, srdf_remove, url_tail } from "../dist/srdf.js";
+     const { srdf_connect, srdf_create, srdf_remove, url_tail, jr_parse,
+             s_login, s_logout, s_getWebID, rdf } = window.srdf;
+
+     const TTL_URL = 'https://solidweb.me/kenji/public/private_test.ttl';
+     let textArea = null;
+     let srdf = null;
+
+     function init() {
+       document.querySelector("#my_login_btn").addEventListener("click",e=>s_login('https://solidcommunity.net'));
+       document.querySelector("#my_logout_btn").addEventListener("click",e=>s_logout());
+       document.querySelector("#test_button").addEventListener("click",test_exec);
+       textArea = document.querySelector("#result");
+       document.querySelector("#clear_button").addEventListener("click",() => {
+         textArea.textContent = "";
+       });
+     }
+     window.addEventListener("load",init);
+
+     function log(str) {
+       textArea.value += str+"\n";
+     }
+
+     async function test_exec() {
+       await test03();
+       const webId = await s_getWebID();
+       if (webId) {
+         alert(`You are logged in as ${webId}.`);
+       } else {
+         alert('You are not logged in.');
+       }
+     }
+
+     async function test03() {
+       srdf = await srdf_connect(TTL_URL);
+       log(srdf.serialize());
+     }
+    </script>
+  </body>
+</html>
