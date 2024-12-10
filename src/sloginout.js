@@ -5,6 +5,47 @@ const solidClientAuthentication = require('@inrupt/solid-client-authn-browser');
 
 const auth = solidClientAuthentication;
 
+// 認証の前処理とか必要ならリダイレクトする関数。
+// 認証サーバーから、長ーいクエリ文字列付きのURLで
+// 帰ってきた時に、それを処理してログイン状態を確定させる
+// ような処理をするので、他の何もよりも先に実行されるべき処理。
+// このライブラリ限定の話だけど、
+// window.SRDF_RESTORE_PREVIOUS_SESSIONをtrueに
+// しておくと、一度ログインしていれば、ちょっと
+// iodcIssuerにリダイレクトしてすぐにログインした
+// ページに戻ってくるようになる。シングルページ
+// アプリケーションの時に便利。
+async function my_handleIncomingRedirect() {
+  if (window.SRDF_RESTORE_PREVIOUS_SESSION) {
+    await auth.handleIncomingRedirect({
+      restorePreviousSession: true
+    });
+  } else {
+    await auth.handleIncomingRedirect({
+      restorePreviousSession: false
+    });
+  }
+}
+
+//ページが読み込まれた時に、ここからスタートする。
+async function s_init() {
+  await my_handleIncomingRedirect(); // ログイン状態の把握の処理
+  window.solidFetch = auth.fetch; // solid操作のためのfetchをwindowに保存。
+  s_ui_update(); // ログイン状態に応じて、表示、非表示などのコントロール
+  s_ui_init(); // 
+}
+document.addEventListener("DOMContentLoaded",s_init);
+
+// ログイン状態に合せてUIを初期化する処理
+async function s_ui_update() {
+  const info = auth.getDefaultSession().info;
+  if (info.isLoggedIn) {
+    await s_ui_logged_in();
+  } else {
+    s_ui_logged_out();
+  }
+}
+
 // UIをログイン状態にする．
 // (CSSのclassがs_logged_inの物をdisplay: block;にして
 //  s_logged_outの物をdisplay: none;にして，s_login_status
@@ -25,7 +66,7 @@ async function s_ui_logged_in() {
   for (let e of document.querySelectorAll(".s_logged_out")) {
     e.style.display = "none";
   }
-  const info = await auth.getDefaultSession().info;
+  const info = auth.getDefaultSession().info;
   if (info.isLoggedIn) {
     for (let e of document.querySelectorAll(".s_login_status")) {
       e.textContent = 'You are logged in as <'+(info.webId)+'>.';
@@ -58,43 +99,10 @@ function s_ui_logged_out() {
   }
 }
 
-// ログイン状態に合せてUIを初期化する処理
-async function s_ui_update() {
-  const info = await auth.getDefaultSession().info;
-  if (info.isLoggedIn) {
-    await s_ui_logged_in();
-  } else {
-    s_ui_logged_out();
-  }
-}
-
-// ページが読み込まれたらUIを初期化する処理を実行
-document.addEventListener("DOMContentLoaded",s_ui_update);
-
-// ページの初期化と，セッションの監視(ログイン・ログアウトの監視)開始。
 // もし，ページの中にidがsloginoutという<button>とか<div>があったら，
 // モーダルでログイン、ログアウトするためのUIを生成して、#sloginoutを
 // クリックすることで表示されるようにする。
 async function s_ui_init() {
-  // solid操作のためのfetchをwindowに保存。
-  window.solidFetch = auth.fetch;
-
-  // window.SRDF_RESTORE_PREVIOUS_SESSIONをtrueに
-  // しておくと、一度ログインしていれば、ちょっと
-  // iodcIssuerにリダイレクトしてすぐにログインした
-  // ページに戻ってくるようになる。シングルページ
-  // アプリケーションの時に便利。
-  if (window.SRDF_RESTORE_PREVIOUS_SESSION) {
-    await auth.handleIncomingRedirect({
-      restorePreviousSession: true
-    });
-  } else {
-    await auth.handleIncomingRedirect({
-      restorePreviousSession: false
-    });
-  }
-  s_ui_update();
-
   const sloginout = document.querySelector('#sloginout');
   if (!!sloginout) {
     const info = auth.getDefaultSession().info;
@@ -164,7 +172,7 @@ async function s_ui_init() {
   <div class='close-btn'></div>
   <h1>login logout</h1>
   <!-- <p class='s_login_status'></p> -->
-  <p><button class='login_solidweb'>login with solidweb</button></p>
+  <p><button class='login_solidweb'>login with solidweb.me</button></p>
   <p><button class='login_solidcommunity'>login with solidcommunity</button></p>
   <p><button class='login_inrupt_nss'>login with inrupt nss</button></p>
   <p>Or other oidcIssuer: <input type='text' class='oidcIssuer'/>
@@ -193,10 +201,14 @@ async function s_ui_init() {
     black_bg.addEventListener('click',()=>{modal_div.classList.toggle('is-show');});
   }
 }
-document.addEventListener("DOMContentLoaded",s_ui_init);
+
 
 // SolidのoidcIssuerを指定してログインさせる処理
 async function s_login(oidcIssuer) {
+  // ページがロードされたらいきなりログインさせるような使われかたを
+  // した場合、s_login()は、このライブラリの初期化より早く実行される
+  // 可能性があるので下の1行を追加しておく。
+  await my_handleIncomingRedirect();
   if (!oidcIssuer) {
     console.log("s_login() Error: oidcIssuer is not specifiled.");
     return;
@@ -213,7 +225,12 @@ async function s_login(oidcIssuer) {
   });
 }
 
+// ログアウトさせる処理
 async function s_logout() {
+  // ページがロードされたらいきなりログアウトさせるような使われかたを
+  // した場合、s_logout()は、このライブラリの初期化より早く実行される
+  // 可能性があるので下の1行を追加しておく。
+  await my_handleIncomingRedirect();
   if (auth.getDefaultSession().info.isLoggedIn) {
     console.log("logouting "+auth.getDefaultSession().info.webId+" ...");
     await auth.logout();
@@ -223,8 +240,12 @@ async function s_logout() {
   await s_ui_update();
 }
 
+// WebIDを文字列で返す。ログインしてない時はnullを返す
 async function s_getWebID() {
-  const info = await auth.getDefaultSession().info;
+  // s_getWebID()は、このライブラリの初期化より早く実行される
+  // 可能性があるので下の1行が必要。
+  await my_handleIncomingRedirect();
+  const info = auth.getDefaultSession().info;
   if (info.isLoggedIn) {
     return info.webId;
   } else {
@@ -232,4 +253,6 @@ async function s_getWebID() {
   }
 }
 
-export { s_login, s_logout, s_getWebID };
+// 念のためInruptのsolid-client-authn-browser全体をエクスポートするため
+const ISCA=solidClientAuthentication;
+export { s_login, s_logout, s_getWebID, ISCA};
