@@ -34084,7 +34084,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   ISCA: () => (/* binding */ ISCA),
 /* harmony export */   s_getWebID: () => (/* binding */ s_getWebID),
 /* harmony export */   s_login: () => (/* binding */ s_login),
-/* harmony export */   s_logout: () => (/* binding */ s_logout)
+/* harmony export */   s_logout: () => (/* binding */ s_logout),
+/* harmony export */   s_waitForSolidAuth: () => (/* binding */ s_waitForSolidAuth)
 /* harmony export */ });
 // SolidのiodcIssuerでログイン・ログアウトの処理をするためのモジュール
 
@@ -34092,6 +34093,9 @@ __webpack_require__.r(__webpack_exports__);
 const solidClientAuthentication = __webpack_require__(/*! @inrupt/solid-client-authn-browser */ "./node_modules/@inrupt/solid-client-authn-browser/dist/index.js");
 
 const auth = solidClientAuthentication;
+
+// Solidの認証処理が完了したかどうか
+let solid_auth_complete = false;
 
 // 認証の前処理とか必要ならリダイレクトする関数。
 // 認証サーバーから、長ーいクエリ文字列付きのURLで
@@ -34113,6 +34117,11 @@ async function my_handleIncomingRedirect() {
       restorePreviousSession: false
     });
   }
+  solid_auth_complete = true;
+  // s_waitForSolidAuth()関数で待ってる処理を完了させる
+  waitingPromiseResolve.forEach(resolve=>{
+    resolve();
+  });
 }
 
 //ページが読み込まれた時に、ここからスタートする。
@@ -34293,10 +34302,6 @@ async function s_ui_init() {
 
 // SolidのoidcIssuerを指定してログインさせる処理
 async function s_login(oidcIssuer) {
-  // ページがロードされたらいきなりログインさせるような使われかたを
-  // した場合、s_login()は、このライブラリの初期化より早く実行される
-  // 可能性があるので下の1行を追加しておく。
-  await my_handleIncomingRedirect();
   if (!oidcIssuer) {
     console.log("s_login() Error: oidcIssuer is not specifiled.");
     return;
@@ -34315,10 +34320,6 @@ async function s_login(oidcIssuer) {
 
 // ログアウトさせる処理
 async function s_logout() {
-  // ページがロードされたらいきなりログアウトさせるような使われかたを
-  // した場合、s_logout()は、このライブラリの初期化より早く実行される
-  // 可能性があるので下の1行を追加しておく。
-  await my_handleIncomingRedirect();
   if (auth.getDefaultSession().info.isLoggedIn) {
     console.log("logouting "+auth.getDefaultSession().info.webId+" ...");
     await auth.logout();
@@ -34330,14 +34331,22 @@ async function s_logout() {
 
 // WebIDを文字列で返す。ログインしてない時はnullを返す
 async function s_getWebID() {
-  // s_getWebID()は、このライブラリの初期化より早く実行される
-  // 可能性があるので下の1行が必要。
-  await my_handleIncomingRedirect();
   const info = auth.getDefaultSession().info;
   if (info.isLoggedIn) {
     return info.webId;
   } else {
     return null;
+  }
+}
+
+const waitingPromiseResolve = [];
+async function s_waitForSolidAuth() {
+  if (solid_auth_complete) {
+    return;
+  } else {
+    return new Promise((resolve,reject)=> {
+      waitingPromiseResolve.push(resolve);
+    });
   }
 }
 
@@ -42929,6 +42938,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   s_getWebID: () => (/* reexport safe */ _sloginout__WEBPACK_IMPORTED_MODULE_0__.s_getWebID),
 /* harmony export */   s_login: () => (/* reexport safe */ _sloginout__WEBPACK_IMPORTED_MODULE_0__.s_login),
 /* harmony export */   s_logout: () => (/* reexport safe */ _sloginout__WEBPACK_IMPORTED_MODULE_0__.s_logout),
+/* harmony export */   s_waitForSolidAuth: () => (/* reexport safe */ _sloginout__WEBPACK_IMPORTED_MODULE_0__.s_waitForSolidAuth),
 /* harmony export */   set_custom_processor: () => (/* reexport safe */ _srdf__WEBPACK_IMPORTED_MODULE_1__.set_custom_processor),
 /* harmony export */   srdf_connect: () => (/* reexport safe */ _srdf__WEBPACK_IMPORTED_MODULE_1__.srdf_connect),
 /* harmony export */   srdf_create: () => (/* reexport safe */ _srdf__WEBPACK_IMPORTED_MODULE_1__.srdf_create),

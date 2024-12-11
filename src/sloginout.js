@@ -5,6 +5,9 @@ const solidClientAuthentication = require('@inrupt/solid-client-authn-browser');
 
 const auth = solidClientAuthentication;
 
+// Solidの認証処理が完了したかどうか
+let solid_auth_complete = false;
+
 // 認証の前処理とか必要ならリダイレクトする関数。
 // 認証サーバーから、長ーいクエリ文字列付きのURLで
 // 帰ってきた時に、それを処理してログイン状態を確定させる
@@ -25,6 +28,11 @@ async function my_handleIncomingRedirect() {
       restorePreviousSession: false
     });
   }
+  solid_auth_complete = true;
+  // s_waitForSolidAuth()関数で待ってる処理を完了させる
+  waitingPromiseResolve.forEach(resolve=>{
+    resolve();
+  });
 }
 
 //ページが読み込まれた時に、ここからスタートする。
@@ -205,10 +213,6 @@ async function s_ui_init() {
 
 // SolidのoidcIssuerを指定してログインさせる処理
 async function s_login(oidcIssuer) {
-  // ページがロードされたらいきなりログインさせるような使われかたを
-  // した場合、s_login()は、このライブラリの初期化より早く実行される
-  // 可能性があるので下の1行を追加しておく。
-  await my_handleIncomingRedirect();
   if (!oidcIssuer) {
     console.log("s_login() Error: oidcIssuer is not specifiled.");
     return;
@@ -227,10 +231,6 @@ async function s_login(oidcIssuer) {
 
 // ログアウトさせる処理
 async function s_logout() {
-  // ページがロードされたらいきなりログアウトさせるような使われかたを
-  // した場合、s_logout()は、このライブラリの初期化より早く実行される
-  // 可能性があるので下の1行を追加しておく。
-  await my_handleIncomingRedirect();
   if (auth.getDefaultSession().info.isLoggedIn) {
     console.log("logouting "+auth.getDefaultSession().info.webId+" ...");
     await auth.logout();
@@ -242,9 +242,6 @@ async function s_logout() {
 
 // WebIDを文字列で返す。ログインしてない時はnullを返す
 async function s_getWebID() {
-  // s_getWebID()は、このライブラリの初期化より早く実行される
-  // 可能性があるので下の1行が必要。
-  await my_handleIncomingRedirect();
   const info = auth.getDefaultSession().info;
   if (info.isLoggedIn) {
     return info.webId;
@@ -253,6 +250,17 @@ async function s_getWebID() {
   }
 }
 
+const waitingPromiseResolve = [];
+async function s_waitForSolidAuth() {
+  if (solid_auth_complete) {
+    return;
+  } else {
+    return new Promise((resolve,reject)=> {
+      waitingPromiseResolve.push(resolve);
+    });
+  }
+}
+
 // 念のためInruptのsolid-client-authn-browser全体をエクスポートするため
 const ISCA=solidClientAuthentication;
-export { s_login, s_logout, s_getWebID, ISCA};
+export { s_login, s_logout, s_getWebID, s_waitForSolidAuth, ISCA};
