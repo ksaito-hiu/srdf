@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>srdf test</title>
+    <style>textarea {width:90%;height:10em;}</style>
+  </head>
+  <body>
+    <h1>test</h1>
+
+    <p><button id="test_button">test_button</button></p>
+    <p><button id="clear_button">clear_textarea</button></p>
+    <textarea id="result"></textarea>
+
+    <!-- <script src="https://cdn.jsdelivr.net/npm/srdf@1.6.0/dist/srdf.js"></script> -->
+    <script src="../dist/srdf.js"></script>
+    <script type="module">
+     const { srdf_connect, srdf_create, srdf_remove, url_tail, jr_parse, rdf } = window.srdf;
+     let RDF_URL = location.href;
+     RDF_URL = RDF_URL.substring(0, RDF_URL.lastIndexOf('/'));
+     RDF_URL = RDF_URL + '/test.ttl'
+     //RDF_URL = RDF_URL + '/newsheadlines.rdf';
+     //RDF_URL = RDF_URL + '/PersonalData.ttl';
+
+// Turtleのテストデーター01
+const turtle_test01 = `
+@prefix : <https://test.org/#> .
+:a :b :c .
+`;
+// Turtleのテストデーター02
+const turtle_test02 = `
+@prefix : <https://test.org/#> .
+:a :b :c4 .
+`;
+// SPARQLのテストデーター01
+const sparql_test01 = `
+PREFIX : <https://test.org/#>
+SELECT ?x ?y ?z
+WHERE { ?x ?y ?z .}
+`;
+// SPARQLのテストデーター02
+const sparql_test02 = `
+PREFIX : <https://test.org/#>
+SELECT ?x ?y ?z 
+WHERE {
+  ?x :の子供 ?y .
+  ?x :の子供 ?z .
+  FILTER ( ?y != ?z )
+  ?y :性別 :男 .
+}
+`;
+// Jenaルールのテストデーター01
+const jena_rule01 = `
+@prefix : <https://test.org/#> .
+(?x :姓 ?sei)
+(?x :名 ?mei)
+    ->
+    strConcat(?sei ' ' ?mei ?simei)
+    (?x :氏名 ?simei)
+    .
+(?x :の子供 ?y)
+(?x :の子供 ?z)
+notEqual(?y ?z)
+(?y :性別 :男)
+    ->
+    (?y :兄弟 ?z)
+    .
+`;
+
+
+     let textArea = null;
+     function init() {
+       document.querySelector("#test_button").addEventListener("click",test);
+       textArea = document.querySelector("#result");
+       document.querySelector("#clear_button").addEventListener("click",() => {
+         textArea.textContent = "";
+       });
+     }
+     document.addEventListener("DOMContentLoaded",init);
+
+     function log(str) {
+       textArea.value += str+"\n";
+     }
+
+     //ボタンを押したら実行される関数
+     async function test() {
+       await test03();
+     }
+
+     // 新規でDBを作る(solid上にttlファイルを作る)
+     // (すでにファイルがあったら消してから作る)
+     // (一応作った後に中身全て表示)
+     // このページにはログイン機能を作ってないので
+     // 自分のPODのトップページでログインしておくべし。
+     async function test01() {
+       const db = await srdf_create(RDF_URL);
+       log(db.serialize());
+     }
+
+     // DBの削除(solid上のttlファイルを削除)
+     // 自分のPODのトップページでログインしておくべし。
+     async function test02() {
+       await srdf_remove(RDF_URL);
+     }
+
+     // ただ既存のDBに接続して，中身を全部表示
+     async function test03() {
+       const db = await srdf_connect(RDF_URL);
+       log(db.serialize());
+     }
+
+     // DBに接続してTurtleで書かれた情報を追加する
+     async function test04() {
+       const db = await srdf_connect(RDF_URL);
+       await db.addTurtle(turtle_test01);
+       //await db.putBack(RDF_URL);
+       log(db.serialize());
+     }
+
+     // Turtleの情報を追加する時にbaseURLを指定する実験。
+     // baseURLが違ってればdb.putBackで書き戻されないなどの
+     // 効果が出る。
+     async function test05() {
+       const db = await srdf_connect(RDF_URL);
+       const baseURL = "https://kenji.solid.community/public/test2.ttl";
+       await db.addTurtle(turtle_test02,baseURL);
+       //await db.putBack(RDF_URL);
+       log(db.serialize());
+     }
+
+     // rdflib.jsの方法で三つ組を追加
+     async function test06() {
+       const db = await srdf_connect(RDF_URL);
+
+       const TEST = new rdf.Namespace("https://test.org/#");
+       const s = rdf.sym("https://test.org/#a");
+       const v = TEST("b");
+       const o = TEST("c");
+
+       await db.add(s,v,o);
+       //await db.putBack(RDF_URL);
+       log(db.serialize());
+     }
+
+     // rdflib.jsの方法で三つ組を追加する時にbaseURLを指定する実験。
+     // baseURLが違ってればdb.putBackで書き戻されないなどの
+     // 効果が出る。
+     async function test07() {
+       const db = await srdf_connect(RDF_URL);
+
+       const TEST = new rdf.Namespace("https://test.org/#");
+       const s = rdf.sym("https://test.org/#a");
+       const v = TEST("b");
+       const o = TEST("c");
+       const w = rdf.sym(RDF_URL);
+
+       await db.add(s,v,o,w);
+       //await db.putBack(RDF_URL);
+       log(db.serialize());
+     }
+
+     // rdflib.jsの方法で多数の三つ組を追加
+     async function test08() {
+       const db = await srdf_connect(RDF_URL);
+
+       const TEST = new rdf.Namespace("https://test.org/#");
+       const ins = [];
+       let s = rdf.sym("https://test.org/#a");
+       let v = TEST("b");
+       let o = TEST("c");
+       ins.push(new rdf.Statement(s,v,o));
+       s = rdf.sym("https://test.org/#d");
+       v = TEST("e");
+       o = "Kenji Saito";
+       let w = rdf.sym(RDF_URL);
+       ins.push(new rdf.Statement(s,v,o,w));
+
+       await db.addAll(ins);
+       //await db.putBack(RDF_URL);
+       log(db.serialize());
+     }
+
+     // SPARQLのSELECTで情報を検索する
+     async function test09() {
+       const db = await srdf_connect(RDF_URL);
+       const results = await db.sparqlSelect(sparql_test01);
+       log(JSON.stringify(results));
+     }
+
+     // SPARQLのSELECTで情報を検索して，一つづつ丁寧に表示
+     // (SPARQLの変数がわかっている時)
+     async function test10() {
+       const db = await srdf_connect(RDF_URL);
+       const results = await db.sparqlSelect(sparql_test01);
+
+       log('----- start -----');
+       for (let i=0;i<results.length;i++) {
+         let str = "";
+         str += "("+url_tail(results[i]['?x']);
+         str += ","+url_tail(results[i]['?y']);
+         str += ","+url_tail(results[i]['?z'])+")";
+         log(str);
+       }
+       log('----- end -----');
+     }
+
+     // rdflib.jsのstatementsMatchingの機能で検索する
+     async function test11() {
+       const db = await srdf_connect(RDF_URL);
+
+       const TEST = new rdf.Namespace("https://test.org/#");
+       let s = TEST("a");
+       const results = db.statementsMatching(s);
+
+       log('----- start -----');
+       for (let i=0;i<results.length;i++) {
+         log(results[i]);
+       }
+       log('----- end -----');
+     }
+
+     // rdflibのstatementMatchingで検索される物を全部消す。
+     // その1。
+     async function test12() {
+       const db = await srdf_connect(RDF_URL);
+       const s = rdf.sym("https://test.org/#a");
+       await db.delete(s,null,null);
+       //await db.putBack(RDF_URL);
+       log(db.serialize());
+     }
+
+     // rdflibのstatementMatchingで検索される物を全部消す。
+     // その2。s,v,oが全部nullの場合は，wを指定
+     // してあげないとエラーになるみたい。
+     async function test13() {
+       const db = await srdf_connect(RDF_URL);
+       let w = rdf.sym(RDF_URL);
+       await db.delete(null,null,null,w);
+       //await db.putBack(RDF_URL);
+       log(db.serialize());
+     }
+
+     // SPARQLのSELECTで情報を検索した検索結果を
+     // 柔軟に一つづつ丁寧に表示
+     // (SPARQLの変数がわかってない時でもOK)
+     async function test14() {
+       const db = await srdf_connect(RDF_URL);
+       const results = await db.sparqlSelect(sparql_test01);
+
+       if (results.length==0) {
+         log("No match!");
+         return;
+       }
+       log('----- start -----');
+       for (let i=0;i<results.length;i++) {
+         let str = "(";
+         for (let k of results.vars) {
+           str += k+":"+url_tail(results[i][k])+", ";
+           //str += k+":"+results[i][k]+", ";
+         }
+         str += ")";
+         log(str);
+       }
+       log('----- end -----');
+     }
+
+     // 推論ループの最大回数
+     const MAX_INFER = 100;
+     // 氏名のデーターを生成するルール
+     async function rule01(db) {
+       const sparql =  `
+         PREFIX : <https://test.org/#>
+         SELECT ?x ?sei ?mei
+         WHERE {
+           ?x :姓 ?sei ;
+              :名 ?mei .
+         }
+         `;
+       let fin;
+       for (let i=0;i<MAX_INFER;i++) {
+         const results = await db.sparqlSelect(sparql);
+         const v = rdf.sym("https://test.org/#氏名");
+         fin = true;
+         for (let r of results) {
+           const shimei = r['?sei'] + " " + r['?mei'];
+           const s = rdf.sym(r['?x']);
+           const quads = await db.search(s,v,shimei);
+           if (quads.length==0)
+             fin = fin && await db.add(s,v,shimei);
+         }
+         if (fin === true)
+           return true;
+       }
+       return false;
+     }
+     // 父親の情報を推論するルール
+     async function rule02(db) {
+       const sparql =  `
+         PREFIX : <https://test.org/#>
+         SELECT ?x ?y
+         WHERE {
+           ?x :の子供 ?y ;
+              :性別 :男 .
+         }
+         `;
+       let fin;
+       for (let i=0;i<MAX_INFER;i++) {
+         const results = await db.sparqlSelect(sparql);
+         const v = rdf.sym("https://test.org/#父親");
+         fin = true;
+         for (let r of results) {
+           const s = rdf.sym(r['?x']);
+           const o = rdf.sym(r['?y']);
+           const quads = await db.search(s,v,o);
+           if (quads.length==0) {
+             await db.add(s,v,o);
+             fin = false;
+           }
+         }
+         if (fin === true)
+           return true;
+       }
+       return false;
+     }
+     // 上のrule01とrule02をsdbに登録して推論させる実験
+     async function test15() {
+       const db = await srdf_connect(RDF_URL);
+       db.addRule(rule01);
+       db.addRule(rule02);
+       const fin = await db.infer();
+       console.log("推論収束="+fin);
+       //await db.putBack(RDF_URL);
+       log(db.serialize());
+     }
+
+     // jena_rule01で推論する実験
+     async function test16() {
+       const db = await srdf_connect(RDF_URL);
+       const parsed_rules = jr_parse(jena_rule01);
+       const fin = await db.infer(parsed_rules);
+       console.log("推論収束="+fin);
+       //await db.putBack(RDF_URL);
+       log(db.serializeCustom('text/turtle',null));
+     }
+    </script>
+  </body>
+</html>
