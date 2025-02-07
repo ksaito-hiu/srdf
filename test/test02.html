@@ -31,6 +31,11 @@
      // (他のwindow.SRDF_RESTORE_PREVIOUS_SESSION=true;なページに移動したければ
      // 一旦ログアウトしてからでないと行けなくなる。)
      window.SRDF_RESTORE_PREVIOUS_SESSION=false;
+     // Solidの認証サーバの設定でDynamic Client Registrationの機能が
+     // OFFになっている場合は以下のようにクライアントIDと
+     // クライアントシークレットを設定する必要がある。
+     // window.SRDF_CLIENT_ID='my-client-id';     
+     // window.SRDF_CLIENT_SECRET='my-client-secret';
     </script>
     <!-- <script src="https://cdn.jsdelivr.net/npm/srdf@1.6.0/dist/srdf.js"></script> -->
     <script src="../dist/srdf.js"></script>
