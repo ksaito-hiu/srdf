@@ -174,6 +174,8 @@ async function s_ui_init() {
     const modal_div = document.createElement('div');
     modal_div.setAttribute('id','sloginout_auto_modal_div');
     document.body.appendChild(modal_div);
+    let saved_oidcIssuer = localStorage.getItem('srdf_saved_oidcIssuer');
+    if (!saved_oidcIssuer) saved_oidcIssuer = "";
     //modal_div.insertAdjacentHTML('afterend',`
     modal_div.innerHTML = `
 <div class='inner'>
@@ -183,7 +185,7 @@ async function s_ui_init() {
   <p><button class='login_solidweb'>login with solidweb.me</button></p>
   <p><button class='login_solidcommunity'>login with solidcommunity</button></p>
   <p><button class='login_inrupt_nss'>login with inrupt nss</button></p>
-  <p>Or other oidcIssuer: <input type='text' class='oidcIssuer'/>
+  <p>Or other oidcIssuer: <input type='text' class='oidcIssuer' value="${saved_oidcIssuer}"/>
     <button class='login-btn'>login</button></p>
   <p><button class='logout-btn'>logout</button></p>
 </div>
@@ -217,6 +219,7 @@ async function s_login(oidcIssuer) {
     console.log("s_login() Error: oidcIssuer is not specifiled.");
     return;
   }
+  localStorage.setItem('srdf_saved_oidcIssuer',oidcIssuer);
   if (auth.getDefaultSession().info.isLoggedIn) {
     console.log("s_login() Error: You had already logged in.");
     return;

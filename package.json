@@ -1,6 +1,6 @@
 {
   "name": "srdf",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "Simple RDF Database for Solid.",
   "main": "index.js",
   "scripts": {
