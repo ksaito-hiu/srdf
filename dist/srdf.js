@@ -34310,12 +34310,17 @@ async function s_login(oidcIssuer) {
     console.log("s_login() Error: You had already logged in.");
     return;
   }
-  await auth.login({
+  const option = {
     oidcIssuer,
     // 都合でクエリ文字列(特にcomeback=true)を削除
     redirectUrl: location.origin + location.pathname,
     clientName: "srdf application"
-  });
+  };
+  if (window.SRDF_CLIENT_ID)
+    option.clientId = window.SRDF_CLIENT_ID;
+  if (window.SRDF_CLIENT_SECRET)
+    option.clientSecret = window.SRDF_CLIENT_SECRET;
+  await auth.login(option);
 }
 
 // ログアウトさせる処理
