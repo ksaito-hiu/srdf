@@ -35,8 +35,10 @@
      // Solidの認証サーバの設定でDynamic Client Registrationの機能が
      // OFFになっている場合は以下のようにクライアントIDと
      // クライアントシークレットを設定する必要がある。
-     // window.SRDF_CLIENT_ID='my-client-id';     
-     // window.SRDF_CLIENT_SECRET='my-client-secret';
+     // window.SRDF_INIT_OPTIONS = {
+     //   init1: btoa('my-client-id'),
+     //   init2: btoa('my-client-secret')
+     // };
     </script>
     <!-- <script src="https://cdn.jsdelivr.net/npm/srdf@1.7.1/dist/srdf.js"></script> -->
     <script src="../dist/srdf.js"></script>

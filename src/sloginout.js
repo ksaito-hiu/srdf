@@ -230,10 +230,10 @@ async function s_login(oidcIssuer) {
     redirectUrl: location.origin + location.pathname,
     clientName: "srdf application"
   };
-  if (window.SRDF_CLIENT_ID)
-    option.clientId = window.SRDF_CLIENT_ID;
-  if (window.SRDF_CLIENT_SECRET)
-    option.clientSecret = window.SRDF_CLIENT_SECRET;
+  if (window.SRDF_INIT_OPTIONS) {
+    option.clientId = atob(window.SRDF_INIT_OPTIONS.init1);
+    option.clientSecret = atob(window.SRDF_INIT_OPTIONS.init2);
+  }
   await auth.login(option);
 }
 
