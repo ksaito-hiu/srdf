@@ -1,0 +1,3 @@
+@prefix : <https://test.org/#> .
+:a :b :c .
+

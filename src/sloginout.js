@@ -184,7 +184,7 @@ async function s_ui_init() {
   <!-- <p class='s_login_status'></p> -->
   <p><button class='login_solidweb'>login with solidweb.me</button></p>
   <p><button class='login_solidcommunity'>login with solidcommunity</button></p>
-  <p><button class='login_inrupt_nss'>login with inrupt nss</button></p>
+  <p><button class='login_inrupt_ess'>login with inrupt ess</button></p>
   <p>Or other oidcIssuer: <input type='text' class='oidcIssuer' value="${saved_oidcIssuer}"/>
     <button class='login-btn'>login</button></p>
   <p><button class='logout-btn'>logout</button></p>
@@ -195,7 +195,7 @@ async function s_ui_init() {
     const login_display = document.querySelector('#sloginout_auto_modal_div .login-display');
     const login0 = document.querySelector('#sloginout_auto_modal_div .login_solidweb');
     const login1 = document.querySelector('#sloginout_auto_modal_div .login_solidcommunity');
-    const login2 = document.querySelector('#sloginout_auto_modal_div .login_inrupt_nss');
+    const login2 = document.querySelector('#sloginout_auto_modal_div .login_inrupt_ess');
     const oidcIssuer = document.querySelector('#sloginout_auto_modal_div .oidcIssuer');
     const login_btn = document.querySelector('#sloginout_auto_modal_div .login-btn');
     const logout_btn = document.querySelector('#sloginout_auto_modal_div .logout-btn');
@@ -205,7 +205,7 @@ async function s_ui_init() {
     close_btn.addEventListener('click',()=>{modal_div.classList.toggle('is-show');});
     login0.addEventListener('click',async ()=>{await s_login('https://solidweb.me')});
     login1.addEventListener('click',async ()=>{await s_login('https://solidcommunity.net')});
-    login2.addEventListener('click',async ()=>{await s_login('https://inrupt.net')});
+    login2.addEventListener('click',async ()=>{await s_login('https://login.inrupt.com')});
     login_btn.addEventListener('click',async ()=>{await s_login(oidcIssuer.value);});
     logout_btn.addEventListener('click',()=>{s_logout();modal_div.classList.toggle('is-show');});
     black_bg.addEventListener('click',()=>{modal_div.classList.toggle('is-show');});
